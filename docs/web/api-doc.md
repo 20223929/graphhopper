@@ -17,6 +17,66 @@ The URL path of the local instance is [http://localhost:8989](http://localhost:8
 
 The endpoint to obtain the route is `/route` via GET.
 
+## Unified route planning API (experimental)
+
+The unified endpoint provides one JSON request shape for walking, cycling, driving and public transit.
+It is an additive API: the existing `/route` and `/route-pt` endpoints remain available and unchanged.
+
+```http
+POST /route/plan
+Content-Type: application/json
+```
+
+Road routing example:
+
+```json
+{
+  "mode": "driving",
+  "origin": { "longitude": 13.38886, "latitude": 52.51704 },
+  "destination": { "longitude": 13.39763, "latitude": 52.52941 },
+  "options": {
+    "instructions": true,
+    "geometry": true,
+    "elevation": false,
+    "pointsEncoded": false,
+    "locale": "en"
+  }
+}
+```
+
+Supported modes are `walking`, `cycling`, `driving` and `transit`.
+For road modes, the default profiles are `foot`, `bike` and `car`, respectively.
+Set `options.profile` to select a different configured profile explicitly.
+
+Public transit example:
+
+```json
+{
+  "mode": "transit",
+  "origin": { "longitude": 13.38886, "latitude": 52.51704 },
+  "destination": { "longitude": 13.39763, "latitude": 52.52941 },
+  "options": {
+    "departureTime": "2026-11-20T08:30:00+01:00",
+    "arriveBy": false,
+    "limitSolutions": 5,
+    "limitStreetTime": "PT30M",
+    "ignoreTransfers": false
+  }
+}
+```
+
+Transit mode requires `gtfs.file` to be configured. Its `departureTime` is an ISO-8601 offset date-time.
+Transit-only options include `arriveBy`, `ignoreTransfers`, `limitSolutions`, `limitTripTime`,
+`limitStreetTime`, `accessProfile`, `egressProfile`, `betaAccessTime` and `betaEgressTime`.
+Durations use ISO-8601 syntax, for example `PT30M`.
+
+The response has a stable outer envelope containing `mode`, `took` (milliseconds) and `result`.
+The `result` currently preserves GraphHopper's native path payload so existing path details and
+public-transit leg information are not discarded. A fully normalized cross-mode route/leg schema
+can be introduced in a later compatible iteration after its transit semantics are specified.
+
+Coordinates in this endpoint always use the GeoJSON order: longitude, latitude.
+
 ## HTTP POST
 
 The GET request has an URL length limitation, so it won't work for many locations per request. In those cases use a HTTP POST request with JSON data as input. 
